@@ -1,0 +1,159 @@
+/* ThreeDImage.css */
+.threed-img-container {
+  position: relative;
+  display: inline-block;
+  opacity: 0;
+  transform: perspective(1200px) rotateX(12deg) rotateY(-8deg) translateZ(-80px) scale(0.92);
+  filter: blur(4px);
+  transition: opacity 1.2s cubic-bezier(0.25, 1, 0.5, 1),
+              transform 1.2s cubic-bezier(0.25, 1, 0.5, 1),
+              filter 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: opacity, transform, filter;
+  overflow: visible;
+}
+
+.threed-img-container.revealed {
+  opacity: 1;
+  transform: perspective(1200px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale(1);
+  filter: blur(0px);
+}
+
+.threed-img-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.threed-img-inner img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Dynamic Soft Shadow layer */
+.threed-img-shadow {
+  position: absolute;
+  top: 10%;
+  left: 5%;
+  width: 90%;
+  height: 90%;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 20px;
+  filter: blur(20px);
+  transform: translateZ(-25px);
+  pointer-events: none;
+  z-index: 1;
+  will-change: transform, filter, opacity;
+  transition: transform 0.15s ease-out, filter 0.15s ease-out, opacity 0.15s ease-out;
+}
+
+body.light-theme .threed-img-shadow {
+  background: rgba(0, 0, 0, 0.15);
+  filter: blur(15px);
+}
+
+/* Dynamic Reflective Glow layer */
+.threed-img-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 5;
+  mix-blend-mode: screen;
+  will-change: background, opacity;
+  transition: opacity 0.4s ease;
+  transform: translateZ(1px);
+}
+
+/* Synchronize with page panels 3D transitions */
+.page-panel.enter-next .threed-img-inner {
+  animation: threedImgEnterNext 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.page-panel.exit-prev .threed-img-inner {
+  animation: threedImgExitPrev 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.page-panel.enter-prev .threed-img-inner {
+  animation: threedImgEnterPrev 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.page-panel.exit-next .threed-img-inner {
+  animation: threedImgExitNext 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes threedImgEnterNext {
+  0% {
+    transform: translateZ(-200px) rotateX(-20deg) translateY(40px) scale(0.85);
+    opacity: 0;
+  }
+  100% {
+    transform: translateZ(0px) rotateX(0deg) translateY(0px) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes threedImgExitPrev {
+  0% {
+    transform: translateZ(0px) rotateX(0deg) translateY(0px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateZ(-250px) rotateX(20deg) translateY(-40px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes threedImgEnterPrev {
+  0% {
+    transform: translateZ(-200px) rotateX(20deg) translateY(-40px) scale(0.85);
+    opacity: 0;
+  }
+  100% {
+    transform: translateZ(0px) rotateX(0deg) translateY(0px) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes threedImgExitNext {
+  0% {
+    transform: translateZ(0px) rotateX(0deg) translateY(0px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateZ(-250px) rotateX(-20deg) translateY(40px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Accessibility: prefers-reduced-motion overrides */
+@media (prefers-reduced-motion: reduce) {
+  .threed-img-container {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+  .threed-img-inner {
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+  .threed-img-inner img {
+    transform: none !important;
+    transition: none !important;
+  }
+  .threed-img-shadow {
+    display: none !important;
+  }
+  .threed-img-glow {
+    display: none !important;
+  }
+}
