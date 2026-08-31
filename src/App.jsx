@@ -514,25 +514,6 @@ export default function App() {
 
   // Initial Seed & State Sync
   useEffect(() => {
-    // Force cache bust if Samsung Cobalt Violet is missing
-    const cachedProducts = localStorage.getItem("mobile_inn_products");
-    if (cachedProducts) {
-      try {
-        const parsed = JSON.parse(cachedProducts);
-        const hasCobaltViolet = parsed.some(p => p.id === "samsung-s26-ultra" && p.image === "/26ultra.png") && parsed.some(p => p.id === "samsung-s26-plus" && p.image === "/26+.png");
-        if (!hasCobaltViolet) {
-          console.log("Purging old cached database to update Samsung colors...");
-          localStorage.removeItem("mobile_inn_products");
-          localStorage.removeItem("mobile_inn_upcoming");
-          localStorage.removeItem("mobile_inn_bookings");
-          localStorage.removeItem("mobile_inn_notifications");
-          window.location.reload();
-          return;
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
     syncState();
     setSimulatedDate(db.getSimulatedDate());
   }, []);
@@ -798,9 +779,16 @@ export default function App() {
   };
 
   const handleDeleteProduct = (productId) => {
-    db.deleteProduct(productId);
-    showToast("Product deleted from storefront inventory.", "warning");
-    syncState();
+    try {
+      db.deleteProduct(productId);
+      showToast("Product deleted successfully from storefront inventory.", "warning");
+      syncState();
+      return true;
+    } catch (err) {
+      console.error("Error deleting product:", err);
+      showToast("Failed to delete product. Please try again.", "error");
+      throw err;
+    }
   };
 
   const handleSaveRepairService = (service) => {

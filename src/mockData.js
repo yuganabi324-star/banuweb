@@ -544,26 +544,12 @@ export const INITIAL_REPAIR_SERVICES = [
 
 // Seed initial databases to localStorage if empty
 const initLocalStorage = () => {
-  const cachedProducts = localStorage.getItem("mobile_inn_products");
-  if (cachedProducts) {
-    try {
-      const parsed = JSON.parse(cachedProducts);
-      const hasAir = parsed.some(p => p.id === "iphone-air");
-      const hasDeepBlue17ProMax = parsed.some(p => p.id === "iphone-17-pro-max" && p.colors && p.colors.some(c => c.name.toLowerCase() === "deep blue"));
-      const hasSamsungColors = parsed.some(p => p.id === "samsung-s26-ultra" && p.image === "/26ultra.png") && parsed.some(p => p.id === "samsung-s26-plus" && p.image === "/26+.png");
-      const hasZFold8 = parsed.some(p => p.id === "samsung-z-fold-8" && p.image === "/zfold8.png");
-      const hasRedmiColors = parsed.some(p => p.id === "redmi-note-15-pro" && p.colors && p.colors.length > 0);
-      if ((parsed.length > 0 && parsed[0].prices && parsed[0].prices["128gb"] < 5000) || !hasAir || !hasDeepBlue17ProMax || !hasSamsungColors || !hasZFold8 || !hasRedmiColors) {
-        console.log("Purging old cached database to initialize new iPhone lineup...");
-        localStorage.removeItem("mobile_inn_products");
-        localStorage.removeItem("mobile_inn_upcoming");
-        localStorage.removeItem("mobile_inn_bookings");
-        localStorage.removeItem("mobile_inn_notifications");
-      }
-    } catch(err) {
-      console.error("Purging corrupted database cache:", err);
-      localStorage.clear();
+  const schemaVersion = localStorage.getItem("mobile_inn_schema_v2");
+  if (!schemaVersion) {
+    if (!localStorage.getItem("mobile_inn_products")) {
+      localStorage.setItem("mobile_inn_products", JSON.stringify(INITIAL_PRODUCTS));
     }
+    localStorage.setItem("mobile_inn_schema_v2", "true");
   }
 
   if (!localStorage.getItem("mobile_inn_products")) {

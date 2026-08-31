@@ -63,6 +63,11 @@ const AdminDashboard = React.memo(function AdminDashboard({
   const [editingProduct, setEditingProduct] = useState(null);
   const [galleryColors, setGalleryColors] = useState([]);
 
+  // Product Delete Confirmation Modal State
+  const [deleteConfirmProduct, setDeleteConfirmProduct] = useState(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
   const hexToRgb = (hex, alpha = 1) => {
     const r = parseInt(hex.slice(1, 3), 16) || 0;
     const g = parseInt(hex.slice(3, 5), 16) || 0;
@@ -221,17 +226,30 @@ const AdminDashboard = React.memo(function AdminDashboard({
     });
   };
 
-  const handleDeleteProductClick = (id, model) => {
-    if (window.confirm(`Are you sure you want to permanently delete ${model}?`)) {
-      onDeleteProduct(id);
-      
+  const handleOpenDeleteModal = (product) => {
+    setDeleteConfirmProduct(product);
+    setDeleteError("");
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmProduct) return;
+    setIsDeletingProduct(true);
+    setDeleteError("");
+    try {
+      await onDeleteProduct(deleteConfirmProduct.id);
       db.addNotification({
         title: "Product Deleted",
-        message: `Admin deleted ${model} from storefront catalog.`,
+        message: `Admin deleted ${deleteConfirmProduct.brand} ${deleteConfirmProduct.model} from storefront catalog.`,
         type: "inventory",
         targetRoles: ["admin", "staff"],
         emailSent: false
       });
+      setDeleteConfirmProduct(null);
+    } catch (err) {
+      console.error(err);
+      setDeleteError("An error occurred while deleting the product. Please try again.");
+    } finally {
+      setIsDeletingProduct(false);
     }
   };
 
@@ -829,7 +847,7 @@ const AdminDashboard = React.memo(function AdminDashboard({
                 )}
               </div>
 
-              {isEditingProduct ? (
+              {isEditingProduct && (
                 <form onSubmit={handleSaveProductSubmit} className="glass-panel" style={{ background: "rgba(10,10,18,0.4)" }}>
                   <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--cyan)" }}>
                     {editingProduct ? `Edit ${editingProduct.model}` : "Register New Smartphone"}
@@ -1164,7 +1182,16 @@ const AdminDashboard = React.memo(function AdminDashboard({
                     <button type="submit" className="btn btn-primary">Save Product</button>
                   </div>
                 </form>
-              ) : (
+              )}
+
+              {/* Existing Products List / Table Section */}
+              <div style={{ marginTop: isEditingProduct ? "2rem" : "0", borderTop: isEditingProduct ? "1px solid var(--border-glass)" : "none", paddingTop: isEditingProduct ? "1.5rem" : "0" }}>
+                {isEditingProduct && (
+                  <h3 style={{ fontSize: "1.1rem", fontWeight: "700", marginBottom: "1rem", color: "var(--cyan)" }}>
+                    Existing Products Inventory ({products.length})
+                  </h3>
+                )}
+                
                 <div className="table-responsive">
                   <table className="custom-table">
                     <thead>
@@ -1220,7 +1247,7 @@ const AdminDashboard = React.memo(function AdminDashboard({
                               <button className="btn btn-sm btn-secondary" style={{ padding: "0.3rem 0.5rem" }} onClick={() => handleEditProductClick(product)}>
                                 Edit
                               </button>
-                              <button className="btn btn-sm btn-danger" style={{ padding: "0.3rem 0.5rem" }} onClick={() => handleDeleteProductClick(product.id, product.model)}>
+                              <button className="btn btn-sm btn-danger" style={{ padding: "0.3rem 0.5rem" }} onClick={() => handleOpenDeleteModal(product)}>
                                 Delete
                               </button>
                             </div>
@@ -1230,7 +1257,7 @@ const AdminDashboard = React.memo(function AdminDashboard({
                     </tbody>
                   </table>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
@@ -1393,6 +1420,143 @@ const AdminDashboard = React.memo(function AdminDashboard({
           )}
 
         </div>
+
+        {/* Delete Confirmation Modal Overlay */}
+        {deleteConfirmProduct && (
+          <div 
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.75)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+              padding: "1rem"
+            }}
+          >
+            <div 
+              className="glass-panel" 
+              style={{
+                maxWidth: "460px",
+                width: "100%",
+                background: "rgba(15, 23, 42, 0.95)",
+                border: "1px solid rgba(244, 63, 94, 0.4)",
+                boxShadow: "0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(244, 63, 94, 0.15)",
+                borderRadius: "16px",
+                padding: "1.75rem"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                <div style={{
+                  width: "42px",
+                  height: "42px",
+                  borderRadius: "50%",
+                  background: "rgba(244, 63, 94, 0.15)",
+                  border: "1px solid var(--rose)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.2rem",
+                  flexShrink: 0
+                }}>
+                  ⚠️
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "1.2rem", fontWeight: "700", margin: 0, color: "var(--text-primary)" }}>
+                    Delete Product
+                  </h3>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Confirm catalog removal</span>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: "1.5rem" }}>
+                <p style={{ fontSize: "0.95rem", color: "var(--text-primary)", fontWeight: "600", marginBottom: "0.5rem" }}>
+                  Are you sure you want to delete this product?
+                </p>
+                
+                <div style={{
+                  padding: "0.75rem 1rem",
+                  background: "rgba(255, 255, 255, 0.03)",
+                  border: "1px solid var(--border-glass)",
+                  borderRadius: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  marginTop: "0.75rem"
+                }}>
+                  {deleteConfirmProduct.image && (
+                    <img 
+                      src={deleteConfirmProduct.image} 
+                      alt={deleteConfirmProduct.model} 
+                      style={{ width: "45px", height: "45px", borderRadius: "6px", objectFit: "cover" }} 
+                    />
+                  )}
+                  <div>
+                    <div style={{ fontWeight: "700", fontSize: "0.9rem", color: "var(--cyan)" }}>
+                      {deleteConfirmProduct.brand} {deleteConfirmProduct.model}
+                    </div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                      Condition: {deleteConfirmProduct.condition === "new" ? "Brand New" : "Second Hand"}
+                    </div>
+                  </div>
+                </div>
+
+                <p style={{ fontSize: "0.75rem", color: "var(--rose)", marginTop: "0.75rem", margin: "0.75rem 0 0 0" }}>
+                  This item will be permanently removed from the store database and customer store view.
+                </p>
+
+                {deleteError && (
+                  <div style={{ 
+                    marginTop: "0.75rem",
+                    padding: "0.5rem 0.75rem", 
+                    background: "rgba(244,63,94,0.15)", 
+                    border: "1px solid var(--rose)", 
+                    borderRadius: "6px", 
+                    fontSize: "0.78rem", 
+                    color: "var(--rose)" 
+                  }}>
+                    {deleteError}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => {
+                    if (!isDeletingProduct) {
+                      setDeleteConfirmProduct(null);
+                      setDeleteError("");
+                    }
+                  }}
+                  disabled={isDeletingProduct}
+                  style={{ padding: "0.5rem 1.25rem" }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger" 
+                  onClick={handleConfirmDelete}
+                  disabled={isDeletingProduct}
+                  style={{ padding: "0.5rem 1.25rem", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}
+                >
+                  {isDeletingProduct ? (
+                    <>Deleting...</>
+                  ) : (
+                    <>Delete</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
