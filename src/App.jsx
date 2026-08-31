@@ -779,9 +779,13 @@ export default function App() {
   };
 
   const handleDeleteProduct = (productId) => {
+    if (!currentUser || currentUser.role !== "admin") {
+      showToast("Unauthorized. Only administrators can delete products.", "error");
+      throw new Error("Unauthorized delete operation");
+    }
     try {
       db.deleteProduct(productId);
-      showToast("Product deleted successfully from storefront inventory.", "warning");
+      showToast("Product deleted successfully.", "success");
       syncState();
       return true;
     } catch (err) {

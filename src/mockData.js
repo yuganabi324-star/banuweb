@@ -608,7 +608,26 @@ const cache = {
   repairServices: null,
   repairBookings: null,
   notifications: null,
-  simulatedDate: null
+  simulatedDate: null,
+  deletedProductIds: null
+};
+
+const getDeletedProductIds = () => {
+  if (cache.deletedProductIds === null) {
+    const raw = localStorage.getItem("mobile_inn_deleted_product_ids");
+    cache.deletedProductIds = raw ? JSON.parse(raw) : [];
+  }
+  return cache.deletedProductIds;
+};
+
+const addDeletedProductId = (id) => {
+  const deleted = getDeletedProductIds();
+  const stringId = String(id);
+  if (!deleted.includes(stringId)) {
+    deleted.push(stringId);
+    cache.deletedProductIds = deleted;
+    localStorage.setItem("mobile_inn_deleted_product_ids", JSON.stringify(deleted));
+  }
 };
 
 const getCachedVal = (key, fallbackVal) => {
@@ -628,11 +647,19 @@ const setCachedVal = (key, val) => {
 export const db = {
   // Products
   getProducts: () => {
-    return getCachedVal("products", INITIAL_PRODUCTS);
+    const deletedIds = getDeletedProductIds();
+    const products = getCachedVal("products", INITIAL_PRODUCTS);
+    return products.filter((p) => !deletedIds.includes(String(p.id)));
   },
   saveProduct: (product) => {
+    const stringId = String(product.id);
+    const deletedIds = getDeletedProductIds();
+    if (deletedIds.includes(stringId)) {
+      cache.deletedProductIds = deletedIds.filter((id) => id !== stringId);
+      localStorage.setItem("mobile_inn_deleted_product_ids", JSON.stringify(cache.deletedProductIds));
+    }
     const products = [...db.getProducts()];
-    const index = products.findIndex((p) => p.id === product.id);
+    const index = products.findIndex((p) => String(p.id) === stringId);
     if (index >= 0) {
       products[index] = { ...products[index], ...product };
     } else {
@@ -642,20 +669,24 @@ export const db = {
     return products;
   },
   deleteProduct: (id) => {
-    const products = db.getProducts().filter((p) => String(p.id) !== String(id));
+    const stringId = String(id);
+    addDeletedProductId(stringId);
+    const products = db.getProducts().filter((p) => String(p.id) !== stringId);
     setCachedVal("products", products);
-    const upcoming = db.getUpcomingProducts().filter((p) => String(p.id) !== String(id));
+    const upcoming = db.getUpcomingProducts().filter((p) => String(p.id) !== stringId);
     setCachedVal("upcoming", upcoming);
     return products;
   },
 
   // Upcoming
   getUpcomingProducts: () => {
-    return getCachedVal("upcoming", UPCOMING_PRODUCTS);
+    const deletedIds = getDeletedProductIds();
+    const upcoming = getCachedVal("upcoming", UPCOMING_PRODUCTS);
+    return upcoming.filter((p) => !deletedIds.includes(String(p.id)));
   },
   saveUpcomingProduct: (product) => {
     const upcoming = [...db.getUpcomingProducts()];
-    const index = upcoming.findIndex((p) => p.id === product.id);
+    const index = upcoming.findIndex((p) => String(p.id) === String(product.id));
     if (index >= 0) {
       upcoming[index] = product;
     } else {
@@ -829,11 +860,15 @@ export const db = {
     const upcoming = db.getUpcomingProducts();
     const products = [...db.getProducts()];
     const simulatedDate = new Date(dateStr);
+    const deletedIds = getDeletedProductIds();
     
     const releasedList = [];
     const remainingUpcoming = [];
 
     upcoming.forEach((phone) => {
+      if (deletedIds.includes(String(phone.id))) {
+        return;
+      }
       const releaseDate = new Date(phone.releaseDate);
       if (simulatedDate >= releaseDate) {
         // Release it!
