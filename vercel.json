@@ -1,5 +1,8 @@
 {
   "rewrites": [
-    { "source": "/:path*", "destination": "/index.html" }
+    {
+      "source": "/((?!robots.txt|sitemap.xml|assets/|.*\\..*).*)",
+      "destination": "/index.html"
+    }
   ]
 }
