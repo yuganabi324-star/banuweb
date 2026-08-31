@@ -26,6 +26,7 @@ dist-ssr
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # Secrets and Firebase Credentials
 *credentials*.json
@@ -33,3 +34,6 @@ dist-ssr
 firebase-key*.json
 *.pem
 
+
+.vercel
+.env*

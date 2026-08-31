@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin-dashboard
+Disallow: /login
+Disallow: /customer-dashboard
+Disallow: /staff-dashboard
+
+Sitemap: https://www.mobileinn.com.lk/sitemap.xml

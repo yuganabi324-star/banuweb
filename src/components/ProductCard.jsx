@@ -104,13 +104,17 @@ const ProductCard = React.memo(function ProductCard({ product, onBookNow, onLear
 
         {/* Action Buttons: Learn More & Buy > */}
         <div className="apple-card-actions">
-          <button 
-            type="button"
-            onClick={() => onLearnMore && onLearnMore(product, selectedStorage, price, activeColor)}
+          <a 
+            href={`/product/${product.id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              if (onLearnMore) onLearnMore(product, selectedStorage, price, activeColor);
+            }}
             className="btn-apple-learn"
+            style={{ textDecoration: "none" }}
           >
             Learn more
-          </button>
+          </a>
 
           <button 
             type="button"

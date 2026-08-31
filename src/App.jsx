@@ -11,6 +11,91 @@ const Login = React.lazy(() => import("./pages/Login"));
 import { db } from "./mockData";
 import MoltenMetal from "./components/MoltenMetal";
 
+const getInitialPage = () => {
+  const path = window.location.pathname;
+  if (path.startsWith("/about")) return "about";
+  if (path.startsWith("/repair-booking")) return "repair-booking";
+  if (path.startsWith("/login")) return "login";
+  if (path.startsWith("/admin-dashboard")) return "admin-dashboard";
+  return "store";
+};
+
+const getInitialProductId = () => {
+  const path = window.location.pathname;
+  if (path.startsWith("/product/")) {
+    return path.split("/")[2] || null;
+  }
+  return null;
+};
+
+// Custom Hook for SEO Metadata and Schema Injection
+function useSEO({ title, description, canonicalUrl, ogType, ogImage, jsonLd }) {
+  useEffect(() => {
+    if (title) {
+      document.title = title;
+    }
+
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    if (description) {
+      metaDesc.setAttribute('content', description);
+    }
+
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    if (canonicalUrl) {
+      canonical.setAttribute('href', canonicalUrl);
+    }
+
+    const ogTags = {
+      'og:title': title,
+      'og:description': description,
+      'og:url': canonicalUrl,
+      'og:type': ogType || 'website',
+      'og:image': ogImage || 'https://mobileinn.com.lk/logomi.png'
+    };
+
+    Object.entries(ogTags).forEach(([property, value]) => {
+      if (!value) return;
+      let tag = document.querySelector(`meta[property="${property}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('property', property);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', value);
+    });
+
+    let jsonLdScript = document.getElementById('seo-json-ld');
+    if (jsonLdScript) {
+      jsonLdScript.remove();
+    }
+    if (jsonLd) {
+      jsonLdScript = document.createElement('script');
+      jsonLdScript.id = 'seo-json-ld';
+      jsonLdScript.type = 'application/ld+json';
+      jsonLdScript.text = JSON.stringify(jsonLd);
+      document.head.appendChild(jsonLdScript);
+    }
+
+    let viewport = document.querySelector('meta[name="viewport"]');
+    if (!viewport) {
+      viewport = document.createElement('meta');
+      viewport.setAttribute('name', 'viewport');
+      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      document.head.appendChild(viewport);
+    }
+  }, [title, description, canonicalUrl, ogType, ogImage, jsonLd]);
+}
+
 export default function App() {
   // Navigation lists for 3D deck transitions
   const PAGES = ["store", "repair-booking", "about", "login", "admin-dashboard"];
@@ -18,13 +103,14 @@ export default function App() {
 
   // Navigation & Auth State
   const [currentUser, setCurrentUser] = useState(null);
-  const [currentPage, setCurrentPage] = useState("store");
-  const [pageHistory, setPageHistory] = useState(["store"]);
+  const [currentPage, setCurrentPage] = useState(getInitialPage);
+  const [pageHistory, setPageHistory] = useState([getInitialPage()]);
+  const [activeProductId, setActiveProductId] = useState(getInitialProductId);
   const [theme, setTheme] = useState("dark"); // 'dark' or 'light'
 
   // 3D transition states
   const [transitionState, setTransitionState] = useState({
-    activePage: "store",
+    activePage: getInitialPage(),
     prevPage: null,
     direction: "forward"
   });
@@ -64,6 +150,10 @@ export default function App() {
     setIsTransitioning(true);
     setPageHistory((prev) => [...prev, newPage]);
     setCurrentPage(newPage);
+    setActiveProductId(null); // clear active product if changing tabs
+
+    const path = newPage === "store" ? "/" : `/${newPage}`;
+    window.history.pushState(null, "", path);
 
     setTimeout(() => {
       setIsTransitioning(false);
@@ -95,11 +185,195 @@ export default function App() {
     });
     setIsTransitioning(true);
     setCurrentPage(newPage);
+    setActiveProductId(null); // clear active product
+
+    const path = newPage === "store" ? "/" : `/${newPage}`;
+    window.history.pushState(null, "", path);
 
     setTimeout(() => {
       setIsTransitioning(false);
     }, 800);
   }, [currentPage, isTransitioning, pageHistory]);
+
+  const handleProductModalChange = React.useCallback((productId) => {
+    setActiveProductId(productId);
+    const path = productId ? `/product/${productId}` : "/";
+    window.history.pushState(null, "", path);
+  }, []);
+
+  // Popstate URL & Routing Sync
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      let newPage = "store";
+      let prodId = null;
+
+      if (path.startsWith("/about")) {
+        newPage = "about";
+      } else if (path.startsWith("/repair-booking")) {
+        newPage = "repair-booking";
+      } else if (path.startsWith("/login")) {
+        newPage = "login";
+      } else if (path.startsWith("/admin-dashboard")) {
+        newPage = "admin-dashboard";
+      } else if (path.startsWith("/product/")) {
+        newPage = "store";
+        prodId = path.split("/")[2] || null;
+      }
+
+      if (newPage !== currentPage) {
+        const prevIdx = PAGES.indexOf(currentPage);
+        const currIdx = PAGES.indexOf(newPage);
+        const direction = currIdx >= prevIdx ? "forward" : "backward";
+
+        setTransitionState({
+          activePage: newPage,
+          prevPage: currentPage,
+          direction
+        });
+        setCurrentPage(newPage);
+      }
+      setActiveProductId(prodId);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [currentPage]);
+
+  // Get active product details for SEO & schema
+  const activeProduct = React.useMemo(() => {
+    if (currentPage === "store" && activeProductId) {
+      return products.find(p => p.id === activeProductId) || null;
+    }
+    return null;
+  }, [currentPage, activeProductId, products]);
+
+  // Compute dynamic SEO metadata parameters
+  const seoParams = React.useMemo(() => {
+    const baseTitle = "Mobile Inn | Mobile Phones & Accessories in Sri Lanka";
+    const baseDesc = "Mobile Inn is your ultimate destination for brand-new and certified pre-owned Apple iPhones, along with Samsung, Redmi, Honor, and Nubia smartphones in Sri Lanka. Genuine showroom warranty and secure booking in Jaffna.";
+    const baseLogo = "https://www.mobileinn.com.lk/logomi.png";
+
+    if (activeProduct) {
+      const pricesArr = Object.values(activeProduct.prices || {});
+      const minPrice = pricesArr.length > 0 ? Math.min(...pricesArr) : 0;
+      const maxPrice = pricesArr.length > 0 ? Math.max(...pricesArr) : 0;
+      const productSchema = {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": activeProduct.model,
+        "brand": {
+          "@type": "Brand",
+          "name": activeProduct.brand
+        },
+        "image": `https://www.mobileinn.com.lk${activeProduct.image}`,
+        "description": activeProduct.description || activeProduct.tagline,
+        "offers": {
+          "@type": "AggregateOffer",
+          "priceCurrency": "LKR",
+          "lowPrice": minPrice,
+          "highPrice": maxPrice,
+          "offerCount": Object.keys(activeProduct.prices || {}).length,
+          "availability": activeProduct.stock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          "url": `https://www.mobileinn.com.lk/product/${activeProduct.id}`
+        }
+      };
+
+      return {
+        title: `${activeProduct.brand} ${activeProduct.model} | Mobile Inn Sri Lanka`,
+        description: `Buy genuine ${activeProduct.brand} ${activeProduct.model} at Mobile Inn. ${activeProduct.tagline || activeProduct.description}`,
+        canonicalUrl: `https://www.mobileinn.com.lk/product/${activeProduct.id}`,
+        ogType: "product",
+        ogImage: `https://www.mobileinn.com.lk${activeProduct.image}`,
+        jsonLd: productSchema
+      };
+    }
+
+    if (currentPage === "about") {
+      return {
+        title: "About Us & Contact | Mobile Inn Sri Lanka",
+        description: "Learn more about Mobile Inn, founded by S. Banushan. We are Sri Lanka's trusted shop for brand-new flagships and certified second-hand iPhones. Visit our Jaffna branch or contact us.",
+        canonicalUrl: "https://www.mobileinn.com.lk/about",
+        ogType: "website",
+        ogImage: baseLogo,
+        jsonLd: null
+      };
+    }
+
+    if (currentPage === "repair-booking") {
+      return {
+        title: "Certified Mobile Repair & Support Booking | Mobile Inn",
+        description: "Book professional repair services for iPhones and Android devices at Mobile Inn Certified Workshop in Jaffna. Screen replacement, battery repair, Face ID fixes, and micro-soldering.",
+        canonicalUrl: "https://www.mobileinn.com.lk/repair-booking",
+        ogType: "website",
+        ogImage: baseLogo,
+        jsonLd: null
+      };
+    }
+
+    if (currentPage === "login") {
+      return {
+        title: "Admin Login | Mobile Inn",
+        description: "Access the Mobile Inn admin and staff management portal.",
+        canonicalUrl: "https://www.mobileinn.com.lk/login",
+        ogType: "website",
+        ogImage: baseLogo,
+        jsonLd: null
+      };
+    }
+
+    if (currentPage === "admin-dashboard") {
+      return {
+        title: "Admin Dashboard | Mobile Inn",
+        description: "Manage bookings, inventory, and staff at Mobile Inn.",
+        canonicalUrl: "https://www.mobileinn.com.lk/admin-dashboard",
+        ogType: "website",
+        ogImage: baseLogo,
+        jsonLd: null
+      };
+    }
+
+    // Default: Home Page / Store
+    const homeSchema = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://www.mobileinn.com.lk/#website",
+          "url": "https://www.mobileinn.com.lk/",
+          "name": "Mobile Inn"
+        },
+        {
+          "@type": "LocalBusiness",
+          "@id": "https://www.mobileinn.com.lk/#localbusiness",
+          "name": "Mobile Inn",
+          "image": baseLogo,
+          "telephone": "+94772519160",
+          "email": "mobileinn0000@gmail.com",
+          "priceRange": "$$",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "No. 330A, Kasthuriyar Road",
+            "addressLocality": "Jaffna",
+            "addressCountry": "LK"
+          },
+          "url": "https://www.mobileinn.com.lk/"
+        }
+      ]
+    };
+
+    return {
+      title: baseTitle,
+      description: baseDesc,
+      canonicalUrl: "https://www.mobileinn.com.lk/",
+      ogType: "website",
+      ogImage: baseLogo,
+      jsonLd: homeSchema
+    };
+  }, [currentPage, activeProduct, products]);
+
+  // Run SEO Hook
+  useSEO(seoParams);
 
   const checkScrollBoundary = (direction) => {
     const container = panelRefs[currentPage]?.current;
@@ -588,6 +862,35 @@ export default function App() {
   const Footer = () => (
     <footer style={{ padding: "2rem 0", textAlign: "center", borderTop: "1px solid var(--border-glass)", fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "4rem" }}>
       <div className="container">
+        <div style={{ display: "flex", justifyContent: "center", gap: "1.5rem", marginBottom: "1rem" }}>
+          <a 
+            href="/" 
+            onClick={(e) => { e.preventDefault(); handleNavigate("store"); }} 
+            style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: "0.8rem", transition: "color 0.2s" }}
+            onMouseOver={(e) => e.target.style.color = "var(--cyan)"}
+            onMouseOut={(e) => e.target.style.color = "var(--text-secondary)"}
+          >
+            Store
+          </a>
+          <a 
+            href="/repair-booking" 
+            onClick={(e) => { e.preventDefault(); handleNavigate("repair-booking"); }} 
+            style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: "0.8rem", transition: "color 0.2s" }}
+            onMouseOver={(e) => e.target.style.color = "var(--cyan)"}
+            onMouseOut={(e) => e.target.style.color = "var(--text-secondary)"}
+          >
+            Support & Repair
+          </a>
+          <a 
+            href="/about" 
+            onClick={(e) => { e.preventDefault(); handleNavigate("about"); }} 
+            style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: "0.8rem", transition: "color 0.2s" }}
+            onMouseOver={(e) => e.target.style.color = "var(--cyan)"}
+            onMouseOut={(e) => e.target.style.color = "var(--text-secondary)"}
+          >
+            About & Contact
+          </a>
+        </div>
         <p>© 2026 MOBILE INN Retails & Certified Repair Center.</p>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "0.5rem" }}>
           <span style={{ fontSize: "0.7rem", letterSpacing: "1px", color: "var(--cyan)", fontWeight: "bold" }}>POWERED BY</span>
@@ -659,6 +962,8 @@ export default function App() {
               <CustomerStore 
                 products={products} 
                 onBookNow={handleWhatsAppBook}
+                activeProductId={activeProductId}
+                onProductModalChange={handleProductModalChange}
               />
             </React.Suspense>
             <Footer />

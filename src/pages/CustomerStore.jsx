@@ -6,7 +6,7 @@ import ScrollReveal from "../components/ScrollReveal";
 import FloatingShapes from "../components/FloatingShapes";
 import ThreeDImage from "../components/ThreeDImage";
 
-const CustomerStore = React.memo(function CustomerStore({ products, onBookNow }) {
+const CustomerStore = React.memo(function CustomerStore({ products, onBookNow, activeProductId, onProductModalChange }) {
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = React.useDeferredValue(searchTerm);
   const [selectedBrand, setSelectedBrand] = useState("All");
@@ -15,6 +15,27 @@ const CustomerStore = React.memo(function CustomerStore({ products, onBookNow })
 
   // Modal State for "Learn More"
   const [learnMoreProduct, setLearnMoreProduct] = useState(null);
+
+  React.useEffect(() => {
+    if (activeProductId) {
+      const found = products.find((p) => p.id === activeProductId);
+      if (found) {
+        const defaultStorage = Object.keys(found.prices || {})[0] || "128gb";
+        const defaultPrice = found.prices[defaultStorage] || 0;
+        const defaultColor = found.colors ? found.colors[0] : null;
+        setLearnMoreProduct({
+          product: found,
+          storage: defaultStorage,
+          price: defaultPrice,
+          activeColor: defaultColor
+        });
+      } else {
+        setLearnMoreProduct(null);
+      }
+    } else {
+      setLearnMoreProduct(null);
+    }
+  }, [activeProductId, products]);
 
   const brands = ["All", "Apple", "Samsung", "Redmi", "Honor", "Nubia"];
 
@@ -101,7 +122,7 @@ const CustomerStore = React.memo(function CustomerStore({ products, onBookNow })
                   lineHeight: "1.2", 
                   marginBottom: "1rem" 
                 }}>
-                  Upgrade to the Future Today
+                  Mobile Inn | Upgrade to the Future
                 </h1>
                 <p style={{ color: "var(--text-secondary)", fontSize: "1.05rem", lineHeight: "1.6", marginBottom: "1.5rem" }}>
                   Get unparalleled deals on the newest iPhone 17 Pro, iPhone Air, and Samsung Galaxy flagships. Enjoy our certified Mobile Inn warranty.
@@ -643,7 +664,11 @@ const CustomerStore = React.memo(function CustomerStore({ products, onBookNow })
                 product={product} 
                 onBookNow={onBookNow} 
                 onLearnMore={(prod, storage, price, activeColor) => {
-                  setLearnMoreProduct({ product: prod, storage, price, activeColor });
+                  if (onProductModalChange) {
+                    onProductModalChange(prod.id);
+                  } else {
+                    setLearnMoreProduct({ product: prod, storage, price, activeColor });
+                  }
                 }}
               />
             ))}
@@ -700,15 +725,21 @@ const CustomerStore = React.memo(function CustomerStore({ products, onBookNow })
         </div>
       </div>
 
-      {/* Learn More Specification Modal */}
+       {/* Learn More Specification Modal */}
       {learnMoreProduct && (
-        <div className="modal-overlay" onClick={() => setLearnMoreProduct(null)}>
+        <div className="modal-overlay" onClick={() => {
+          if (onProductModalChange) onProductModalChange(null);
+          setLearnMoreProduct(null);
+        }}>
           <div 
             className="modal-content" 
             style={{ maxWidth: "680px" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button className="modal-close-btn" onClick={() => setLearnMoreProduct(null)}>&times;</button>
+            <button className="modal-close-btn" onClick={() => {
+              if (onProductModalChange) onProductModalChange(null);
+              setLearnMoreProduct(null);
+            }}>&times;</button>
             
             <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
               <span className={`badge ${learnMoreProduct.product.condition === "new" ? "badge-new" : "badge-used"}`} style={{ marginBottom: "0.5rem" }}>
@@ -753,25 +784,25 @@ const CustomerStore = React.memo(function CustomerStore({ products, onBookNow })
                 <div style={{ display: "flex", justifyContent: "center", gap: "0.75rem", flexWrap: "wrap" }}>
                   {learnMoreProduct.product.colors.map((col, idx) => (
                     <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setLearnMoreProduct(prev => ({ 
-                        ...prev, 
-                        activeColor: col 
-                      }))}
-                      style={{
-                        width: "28px",
-                        height: "28px",
-                        borderRadius: "50%",
-                        backgroundColor: col.hex,
-                        border: learnMoreProduct.activeColor?.name === col.name ? "2px solid #ffffff" : "1px solid rgba(255,255,255,0.25)",
-                        cursor: "pointer",
-                        outline: "none",
-                        transition: "all 0.2s ease",
-                        transform: learnMoreProduct.activeColor?.name === col.name ? "scale(1.15)" : "scale(1)",
-                        boxShadow: learnMoreProduct.activeColor?.name === col.name ? "0 0 8px rgba(255, 255, 255, 0.4)" : "none"
-                      }}
-                      title={col.name}
+                       key={idx}
+                       type="button"
+                       onClick={() => setLearnMoreProduct(prev => ({ 
+                         ...prev, 
+                         activeColor: col 
+                       }))}
+                       style={{
+                         width: "28px",
+                         height: "28px",
+                         borderRadius: "50%",
+                         backgroundColor: col.hex,
+                         border: learnMoreProduct.activeColor?.name === col.name ? "2px solid #ffffff" : "1px solid rgba(255,255,255,0.25)",
+                         cursor: "pointer",
+                         outline: "none",
+                         transition: "all 0.2s ease",
+                         transform: learnMoreProduct.activeColor?.name === col.name ? "scale(1.15)" : "scale(1)",
+                         boxShadow: learnMoreProduct.activeColor?.name === col.name ? "0 0 8px rgba(255, 255, 255, 0.4)" : "none"
+                       }}
+                       title={col.name}
                     />
                   ))}
                 </div>
@@ -831,6 +862,7 @@ const CustomerStore = React.memo(function CustomerStore({ products, onBookNow })
                 }}
                 onClick={() => {
                   const { product: prod, storage, price, activeColor } = learnMoreProduct;
+                  if (onProductModalChange) onProductModalChange(null);
                   setLearnMoreProduct(null);
                   onBookNow(prod, storage, price, activeColor);
                 }}

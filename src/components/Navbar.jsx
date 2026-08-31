@@ -65,46 +65,50 @@ const Navbar = React.memo(function Navbar({
             }}
           />
           <div>
-            <h1 style={{ fontSize: "1.05rem", fontWeight: "600", color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+            <strong style={{ fontSize: "1.05rem", fontWeight: "600", color: "var(--text-primary)", letterSpacing: "-0.01em", display: "block" }}>
               MOBILE INN
-            </h1>
+            </strong>
           </div>
         </div>
 
         {/* Center Navigation Links */}
         <div className="nav-links">
-          <button 
-            onClick={() => setCurrentPage("store")}
+          <a 
+            href="/"
+            onClick={(e) => { e.preventDefault(); setCurrentPage("store"); }}
             className={`tab-btn ${currentPage === "store" ? "active" : ""}`}
-            style={{ fontSize: "0.82rem", fontWeight: "400" }}
+            style={{ fontSize: "0.82rem", fontWeight: "400", textDecoration: "none" }}
           >
             Store
-          </button>
+          </a>
 
-          <button 
-            onClick={() => setCurrentPage("repair-booking")}
+          <a 
+            href="/repair-booking"
+            onClick={(e) => { e.preventDefault(); setCurrentPage("repair-booking"); }}
             className={`tab-btn ${currentPage === "repair-booking" ? "active" : ""}`}
-            style={{ fontSize: "0.82rem", fontWeight: "400", display: "flex", alignItems: "center", gap: "0.25rem" }}
+            style={{ fontSize: "0.82rem", fontWeight: "400", display: "flex", alignItems: "center", gap: "0.25rem", textDecoration: "none" }}
           >
             <span>Support & Repair</span>
-          </button>
+          </a>
 
-          <button 
-            onClick={() => setCurrentPage("about")}
+          <a 
+            href="/about"
+            onClick={(e) => { e.preventDefault(); setCurrentPage("about"); }}
             className={`tab-btn ${currentPage === "about" ? "active" : ""}`}
-            style={{ fontSize: "0.82rem", fontWeight: "400" }}
+            style={{ fontSize: "0.82rem", fontWeight: "400", textDecoration: "none" }}
           >
             About
-          </button>
+          </a>
 
           {currentUser && currentUser.role === "admin" && (
-            <button 
-              onClick={() => setCurrentPage("admin-dashboard")}
+            <a 
+              href="/admin-dashboard"
+              onClick={(e) => { e.preventDefault(); setCurrentPage("admin-dashboard"); }}
               className={`tab-btn ${currentPage === "admin-dashboard" ? "active" : ""}`}
-              style={{ fontSize: "0.82rem", fontWeight: "400" }}
+              style={{ fontSize: "0.82rem", fontWeight: "400", textDecoration: "none" }}
             >
               Admin Dashboard
-            </button>
+            </a>
           )}
         </div>
 
@@ -320,50 +324,58 @@ const Navbar = React.memo(function Navbar({
       {/* Mobile Menu Drawer Overlay */}
       <div className={`nav-mobile-drawer ${mobileMenuOpen ? "active" : ""}`}>
         <div className="drawer-links">
-          <button 
-            onClick={() => {
+          <a 
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
               setCurrentPage("store");
               setMobileMenuOpen(false);
             }}
             className={`tab-btn ${currentPage === "store" ? "active" : ""}`}
-            style={{ fontSize: "1.05rem", fontWeight: "500" }}
+            style={{ fontSize: "1.05rem", fontWeight: "500", textDecoration: "none", display: "block", padding: "0.5rem 0" }}
           >
             Store
-          </button>
+          </a>
 
-          <button 
-            onClick={() => {
+          <a 
+            href="/repair-booking"
+            onClick={(e) => {
+              e.preventDefault();
               setCurrentPage("repair-booking");
               setMobileMenuOpen(false);
             }}
             className={`tab-btn ${currentPage === "repair-booking" ? "active" : ""}`}
-            style={{ fontSize: "1.05rem", fontWeight: "500" }}
+            style={{ fontSize: "1.05rem", fontWeight: "500", textDecoration: "none", display: "block", padding: "0.5rem 0" }}
           >
             Support & Repair
-          </button>
+          </a>
 
-          <button 
-            onClick={() => {
+          <a 
+            href="/about"
+            onClick={(e) => {
+              e.preventDefault();
               setCurrentPage("about");
               setMobileMenuOpen(false);
             }}
             className={`tab-btn ${currentPage === "about" ? "active" : ""}`}
-            style={{ fontSize: "1.05rem", fontWeight: "500" }}
+            style={{ fontSize: "1.05rem", fontWeight: "500", textDecoration: "none", display: "block", padding: "0.5rem 0" }}
           >
             About
-          </button>
+          </a>
 
           {currentUser && currentUser.role === "admin" && (
-            <button 
-              onClick={() => {
+            <a 
+              href="/admin-dashboard"
+              onClick={(e) => {
+                e.preventDefault();
                 setCurrentPage("admin-dashboard");
                 setMobileMenuOpen(false);
               }}
               className={`tab-btn ${currentPage === "admin-dashboard" ? "active" : ""}`}
-              style={{ fontSize: "1.05rem", fontWeight: "500" }}
+              style={{ fontSize: "1.05rem", fontWeight: "500", textDecoration: "none", display: "block", padding: "0.5rem 0" }}
             >
               Admin Dashboard
-            </button>
+            </a>
           )}
         </div>
 
