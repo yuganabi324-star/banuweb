@@ -108,6 +108,18 @@ export default function App() {
   const [activeProductId, setActiveProductId] = useState(getInitialProductId);
   const [theme, setTheme] = useState("dark"); // 'dark' or 'light'
 
+  // Database Synchronization State
+  const [products, setProducts] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [repairServices, setRepairServices] = useState([]);
+  const [repairBookings, setRepairBookings] = useState([]);
+  const [simulatedDate, setSimulatedDate] = useState("2026-07-19");
+
+  // Toast Alert State
+  const [toasts, setToasts] = useState([]); // [{ id, text, type }]
+
   // 3D transition states
   const [transitionState, setTransitionState] = useState({
     activePage: getInitialPage(),
@@ -487,16 +499,6 @@ export default function App() {
     }
     return "page-panel";
   };
-  
-  // Database Synchronization State
-  const [products, setProducts] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [repairServices, setRepairServices] = useState([]);
-  const [repairBookings, setRepairBookings] = useState([]);
-  const [simulatedDate, setSimulatedDate] = useState("2026-07-19");
-
   // WhatsApp Mobile Booking Handler
   const handleWhatsAppBook = React.useCallback((product, storage, price, color) => {
     const message = `Hello Mobile Inn, I'm interested in booking a phone:\n` +
@@ -509,9 +511,6 @@ export default function App() {
     const url = `https://wa.me/94772519160?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
   }, []);
-  
-  // Toast Alert State
-  const [toasts, setToasts] = useState([]); // [{ id, text, type }]
 
   // Initial Seed & State Sync
   useEffect(() => {
