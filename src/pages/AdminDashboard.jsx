@@ -231,7 +231,8 @@ const AdminDashboard = React.memo(function AdminDashboard({
     setDeleteError("");
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!deleteConfirmProduct) return;
     setIsDeletingProduct(true);
     setDeleteError("");
@@ -244,6 +245,10 @@ const AdminDashboard = React.memo(function AdminDashboard({
         targetRoles: ["admin", "staff"],
         emailSent: false
       });
+      if (editingProduct && String(editingProduct.id) === String(deleteConfirmProduct.id)) {
+        setIsEditingProduct(false);
+        setEditingProduct(null);
+      }
       setDeleteConfirmProduct(null);
     } catch (err) {
       console.error(err);
@@ -1177,7 +1182,21 @@ const AdminDashboard = React.memo(function AdminDashboard({
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: "1.5rem", justifyContent: "flex-end", marginTop: "1rem" }}>
+                  <div style={{ display: "flex", gap: "1rem", alignItems: "center", justifyContent: "flex-end", marginTop: "1.25rem" }}>
+                    {editingProduct && (
+                      <button 
+                        type="button" 
+                        className="btn btn-danger" 
+                        style={{ marginRight: "auto", display: "inline-flex", alignItems: "center", gap: "0.4rem" }} 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleOpenDeleteModal(editingProduct);
+                        }}
+                      >
+                        🗑️ Delete Product
+                      </button>
+                    )}
                     <button type="button" className="btn btn-secondary" onClick={() => setIsEditingProduct(false)}>Cancel</button>
                     <button type="submit" className="btn btn-primary">Save Product</button>
                   </div>
@@ -1244,10 +1263,28 @@ const AdminDashboard = React.memo(function AdminDashboard({
                           </td>
                           <td>
                             <div style={{ display: "flex", gap: "0.5rem" }}>
-                              <button className="btn btn-sm btn-secondary" style={{ padding: "0.3rem 0.5rem" }} onClick={() => handleEditProductClick(product)}>
+                              <button 
+                                type="button" 
+                                className="btn btn-sm btn-secondary" 
+                                style={{ padding: "0.3rem 0.5rem" }} 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleEditProductClick(product);
+                                }}
+                              >
                                 Edit
                               </button>
-                              <button className="btn btn-sm btn-danger" style={{ padding: "0.3rem 0.5rem" }} onClick={() => handleOpenDeleteModal(product)}>
+                              <button 
+                                type="button" 
+                                className="btn btn-sm btn-danger" 
+                                style={{ padding: "0.3rem 0.5rem" }} 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleOpenDeleteModal(product);
+                                }}
+                              >
                                 Delete
                               </button>
                             </div>

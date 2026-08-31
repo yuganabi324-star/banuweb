@@ -642,8 +642,10 @@ export const db = {
     return products;
   },
   deleteProduct: (id) => {
-    const products = db.getProducts().filter((p) => p.id !== id);
+    const products = db.getProducts().filter((p) => String(p.id) !== String(id));
     setCachedVal("products", products);
+    const upcoming = db.getUpcomingProducts().filter((p) => String(p.id) !== String(id));
+    setCachedVal("upcoming", upcoming);
     return products;
   },
 
